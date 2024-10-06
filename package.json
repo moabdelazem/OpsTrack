@@ -1,0 +1,13 @@
+{
+  "name": "opstrack",
+  "scripts": {
+    "dev": "bun run --hot server/index.ts",
+    "build" : "bun build server/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.6.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

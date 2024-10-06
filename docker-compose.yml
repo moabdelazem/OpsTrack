@@ -1,0 +1,16 @@
+services:
+  ops_db:
+    image: postgres:latest
+    container_name: ops_db
+    environment:
+      POSTGRES_USER: ops
+      POSTGRES_PASSWORD: ops
+      POSTGRES_DB: ops
+    ports:
+      - "5432:5432"
+    volumes:
+      - ops_db:/var/lib/postgresql/data
+
+
+volumes:
+  ops_db:
