@@ -1,5 +1,12 @@
 import { Hono } from "hono";
 import { db } from "../app";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
+
+// Create Zod Schema for the Task model
+const TaskSchema = z.object({
+  title: z.string(),
+});
 
 // Create a new Hono instance
 export const tasksRoutes = new Hono()
@@ -17,7 +24,7 @@ export const tasksRoutes = new Hono()
     // Return the total number of tasks as JSON
     return c.json({ total: totalTasks }, 200);
   })
-  .post("/", async (c) => {
+  .post("/", zValidator("json", TaskSchema), async (c) => {
     // Parse the request body as JSON
     const { title } = await c.req.json();
 
@@ -31,7 +38,31 @@ export const tasksRoutes = new Hono()
     // Return the new task as JSON
     return c.json({ task: newTask }, 201);
   })
-  .delete("/:id", async (c) => {
+  .put("/:id/check", async (c) => {
+    const taskId = c.req.param("id");
+    const taskStatus = await db.tasks.findUnique({
+      where: {
+        id: taskId,
+      },
+      select: {
+        completed: true,
+      },
+    });
+
+    // Update the task in the database
+    const updatedTask = await db.tasks.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        completed: !taskStatus,
+      },
+    });
+
+    // Return the updated task as JSON
+    return c.json({ task: updatedTask }, 200);
+  })
+  .delete("/:id", zValidator("json", TaskSchema), async (c) => {
     const taskId = c.req.param("id");
 
     // Delete the task from the database
@@ -43,4 +74,21 @@ export const tasksRoutes = new Hono()
 
     // Return a success message
     return c.json({ message: "Task deleted successfully" }, 204);
+  })
+  .put("/:id", zValidator("json", TaskSchema), async (c) => {
+    const taskId = c.req.param("id");
+    const { title } = await c.req.json();
+
+    // Update the task in the database
+    const updatedTask = await db.tasks.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        title,
+      },
+    });
+
+    // Return the updated task as JSON
+    return c.json({ task: updatedTask }, 200);
   });
