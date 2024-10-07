@@ -8,6 +8,11 @@ const TaskSchema = z.object({
   title: z.string(),
 });
 
+const updateTaskSchema = z.object({
+  title: z.string(),
+  completed: z.boolean(),
+});
+
 // Create a new Hono instance
 export const tasksRoutes = new Hono()
   .get("/", async (c) => {
@@ -23,6 +28,32 @@ export const tasksRoutes = new Hono()
 
     // Return the total number of tasks as JSON
     return c.json({ total: totalTasks }, 200);
+  })
+  .get("/dashboard-stats", async (c) => {
+    // Query the total number of tasks from the database
+    const totalTasks = await db.tasks.count();
+
+    // Query the total number of completed tasks from the database
+    const completedTasks = await db.tasks.count({
+      where: {
+        completed: true,
+      },
+    });
+
+    // Calculate the percentage of completed tasks
+    const completedPercentage = Math.round((completedTasks / totalTasks) * 100);
+
+    // Return the dashboard stats as JSON
+    return c.json(
+      {
+        stats: {
+          total: totalTasks,
+          completed: completedTasks,
+          completedPercentage,
+        },
+      },
+      200
+    );
   })
   .post("/", zValidator("json", TaskSchema), async (c) => {
     // Parse the request body as JSON
@@ -75,9 +106,9 @@ export const tasksRoutes = new Hono()
     // Return a success message
     return c.json({ message: "Task deleted successfully" }, 204);
   })
-  .put("/:id", zValidator("json", TaskSchema), async (c) => {
+  .put("/:id", zValidator("json", updateTaskSchema), async (c) => {
     const taskId = c.req.param("id");
-    const { title } = await c.req.json();
+    const { title, completed } = await c.req.json();
 
     // Update the task in the database
     const updatedTask = await db.tasks.update({
@@ -86,6 +117,7 @@ export const tasksRoutes = new Hono()
       },
       data: {
         title,
+        completed,
       },
     });
 
